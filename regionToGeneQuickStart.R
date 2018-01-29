@@ -13,12 +13,15 @@
 #+ echo=F
 library(data.table)
 splitReadsInfo <- fread("/data/recount/GTEx/SRP012682.junction_id_with_transcripts.bed")
+## We reformat the GTEx to obtain the junID
+splitReadsInfo[,"junID" := tstrsplit(V4, "|", fixed=TRUE,keep=1)]
+setDF(splitReadsInfo)
 
 
 #' We load the split reads counts per tissue. The counts for the split reads can
 #' be downloaded from here
 #' Now, we take as example the junction count expression for bladder
-splitReadCounts.tmp <- read.csv("/data/recount/GTEx/byTissue/datatable/Bladder/Bladder.csv",check.names=FALSE)
+splitReadCounts <- read.csv("/data/recount/GTEx/byTissue/datatable/Bladder/Bladder.csv",check.names=FALSE)
 #' The count expression data.frame contain n+1 columns where n is the number of
 #' samples. The extra column contains the unique ID for the junctions. The name
 #' of the unique ID column must be 'junID'
@@ -26,7 +29,7 @@ splitReadCounts.tmp <- read.csv("/data/recount/GTEx/byTissue/datatable/Bladder/B
 
 #' We set the percentage of the number of samples that have to pass the counts
 #' to 5%
-system.time(splitReadTable <- loadSplitReadsGTEx(splitReadCounts,splitReadInfo, 5))
+system.time(splitReadTable <- filterSplitReads(splitReadCounts,splitReadsInfo, 5))
 
 #' Load the path for the GTF reference file which will be use to annotate the
 #' juctions
@@ -54,8 +57,11 @@ system.time(splitReadTable <- annotateSplitReads(GTFPath,splitReadTable))
 ### load
 load("/home/dzhang/projects/OMIM/results/intron_intergenic_regions_for_Seb_package_test/ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM.rda")
 
-head(ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM)
-ranges(ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM)
+library(SummarizedExperiment)
+regions <- rowRanges(ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM)
+
+ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM
+
 
 
 
