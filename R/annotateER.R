@@ -233,3 +233,4 @@ annotateERJunction <- function(regions,coverageIntergenic,annotatedJunction)
     #
     # tmp.intergenicRegions[distNearest$queryHits,"transcript"] <- distNearest$transcipt
 }
+
