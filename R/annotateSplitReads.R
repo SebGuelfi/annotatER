@@ -85,10 +85,10 @@ loadSplitReads  <- function(list.samples,minSamples,minCounts=1)
 filterSplitReads <- function(splitReadCounts,splitReadInfo, minSamples, minCounts=1)
 {
     ## filter split reads that do not have at least minCounts split reads counts in at least minSamples number of samples
-    idx <- which(rowSums(splitReadCounts[,-which(colnames(splitReadCounts)=="junID")]>=minCounts,na.rm = T)>ncol(splitReadCounts)*0.01*minSamples)
-    splitReads.final <- cbind(splitReadInfo[idx,c("junID","V1","V2","V3","V6")],cbind(rowSums(splitReadCounts[idx,-which(colnames(splitReadCounts)=="junID")]>=minCounts,na.rm = T),
-                                                                                       splitReadCounts[idx,-which(colnames(splitReadCounts)=="junID")]))
-
+    idx <- which(rowSums(splitReadCounts[,-which(colnames(splitReadCounts)=="junID")]>=minCounts,na.rm = T)>(ncol(splitReadCounts)-1)*0.01*minSamples)
+    splitReads.final <- cbind(splitReadsInfo[match(splitReadCounts[idx,"junID"],splitReadsInfo$junID),c("junID","V1","V2","V3","V6")],
+                              cbind(rowSums(splitReadCounts[idx,-which(colnames(splitReadCounts)=="junID")]>=minCounts,na.rm = T),
+                                    splitReadCounts[idx,-which(colnames(splitReadCounts)=="junID")]))
     colnames(splitReads.final)[2:6] <- c("chr","start","stop","strand","countsSamples")
     return(splitReads.final)
 }
@@ -100,9 +100,10 @@ filterSplitReads <- function(splitReadCounts,splitReadInfo, minSamples, minCount
 #' @param format the source of the split reads either GTEX or STAR
 #' (GTEX by default)
 #' @return dataframe returns a data.frame object with the annotated split reads
-annotateSplitReads <- function(GTFPath,splitReadTable,format="GTEX")
+annotateSplitReads <- function(GTFPath,splitReadTable,geneList=NULL)
 {
-
+    library(data.table)
+    library(tidyverse)
     library(refGenome)
     # change to directory where you downloaded GTF file
     #setwd("/home/sguelfi/neuroscience/WT_BRAINEAC/hipp/salmon/salmonReferences/GTF/")
@@ -117,10 +118,19 @@ annotateSplitReads <- function(GTFPath,splitReadTable,format="GTEX")
 
     jens <- getSpliceTable(ens)
     jens <- as.data.frame(jens@ev$gtf)
+
+    if(!is.null(geneList))
+    {
+        jens <- jens %>% filter(as.character(gene_id)%in%as.character(geneList))
+        message(paste(Sys.time(),length(unique(jens$gene_id)),"genes retained"))
+        rm(geneList)
+    }
+
     jens$strand <- as.character(jens$strand)
 
-    jens$seqid <- gsub("chr","",jens$seqid)
-    splitReadTable$chr <- gsub("chr","",splitReadTable$chr)
+
+    jens$seqid <- gsub("chr","",as.character(jens$seqid))
+    splitReadTable$chr <- gsub("chr","",as.character(splitReadTable$chr))
 
     # head(jens)
     # id seqid    lstart      lend    rstart      rend         gene_id gene_name strand   transcript_id   lexid   rexid transcript_biotype
@@ -145,7 +155,6 @@ annotateSplitReads <- function(GTFPath,splitReadTable,format="GTEX")
         splitReadTable$strand[splitReadTable$strand==0] <- "*"
     }
 
-    library(data.table)
 
     message(paste(Sys.time(), 'Getting acceptor sites annotation'))
     ## get the acceptor for the forward strand

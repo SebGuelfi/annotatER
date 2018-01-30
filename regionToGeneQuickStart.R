@@ -20,12 +20,14 @@ setDF(splitReadsInfo)
 
 #' We load the split reads counts per tissue. The counts for the split reads can
 #' be downloaded from here
-#' Now, we take as example the junction count expression for bladder
-splitReadCounts <- read.csv("/data/recount/GTEx/byTissue/datatable/Bladder/Bladder.csv",check.names=FALSE)
+#' Now, we take as example the junction count expression for putamen
+splitReadCounts <- read.csv("/data/recount/GTEx/byTissue/datatable/Brain-Putamen_basalganglia/Brain-Putamen_basalganglia.csv",check.names=FALSE)
 #' The count expression data.frame contain n+1 columns where n is the number of
 #' samples. The extra column contains the unique ID for the junctions. The name
 #' of the unique ID column must be 'junID'
 
+## we select only the OMIM genes
+OMIMGenes <- read.csv("/home/dzhang/projects/OMIM/one_time_files_for_seb/OMIM_filtered_uniq_ens_ids_151017.csv",header = F)
 
 #' We set the percentage of the number of samples that have to pass the counts
 #' to 5%
@@ -42,17 +44,15 @@ GTFPath <- "/data/references/GTF/Homo_sapiens.GRCh38.87.gtf"
 splitReadTable$start <- splitReadTable$start +1
 splitReadTable$stop <- splitReadTable$stop +1
 
-
-
 ### take a sample of 10000 split reads
 
-splitReadTable <- head(splitReadTable,10000)
+#splitReadTable <- head(splitReadTable,10000)
 ## we select only the first 6 columns that correspond to the coordinates of the
 ## split reads
 splitReadTable <- splitReadTable[,1:6]
 head(splitReadTable)
 
-system.time(splitReadTable <- annotateSplitReads(GTFPath,splitReadTable))
+system.time(splitReadTable <- annotateSplitReads(GTFPath,splitReadTable,geneList = OMIMGenes$V1))
 
 ### load
 load("/home/dzhang/projects/OMIM/results/intron_intergenic_regions_for_Seb_package_test/ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM.rda")
@@ -60,7 +60,7 @@ load("/home/dzhang/projects/OMIM/results/intron_intergenic_regions_for_Seb_packa
 library(SummarizedExperiment)
 regions <- rowRanges(ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM)
 
-ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM
+annotated.regions <- annotatERJunction(regions,splitReadTable)
 
 
 
