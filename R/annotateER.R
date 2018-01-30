@@ -3,12 +3,13 @@
 #' @param coverageIntergenic
 #' @param annotatedJunction a data.frame with the data generated
 
-annotateERJunction <- function(regions,coverageIntergenic,annotatedJunction)
+annotatERJunction <- function(regions,annotatedJunction)
 {
     ##############################################################################
     ## this is the stage 1. annotation is done using the annotated split reads ###
     ##############################################################################
-
+    library(data.table)
+    library(tidyverse)
     if(!all(is.element("acceptor",colnames(annotatedJunction)),
            is.element("donor",colnames(annotatedJunction)),
            is.element("junction",colnames(annotatedJunction))))
@@ -45,20 +46,14 @@ annotateERJunction <- function(regions,coverageIntergenic,annotatedJunction)
     ## adding the information on the junction id, selecting the junction id with maximum number of samples, if the region overlap with multiple junctions
     regionJuncOve.df <- as.data.frame(regionJuncOve)
     regionJuncOve.df <- cbind(regionJuncOve.df,countsSamples=tmp.annotatedJunction[match(mcols(juncti.GR[regionJuncOve.df$subjectHits])[,"junID"],tmp.annotatedJunction$junID),"countsSamples"])
-    setDT(regionJuncOve.df)
-    regionJuncOve.df<- regionJuncOve.df [, .SD[which.max(countsSamples)], by=queryHits]
-    setDF(regionJuncOve.df)
-
+    regionJuncOve.df <- as.data.frame(regionJuncOve.df %>% group_by(queryHits) %>% dplyr::slice(which.max(countsSamples)))
     tmp.regions[regionJuncOve.df$queryHits,c(colnames( tmp.annotatedJunction)[c(1,6:11)],"pred_strand")] <- tmp.annotatedJunction[match(mcols(juncti.GR[regionJuncOve.df$subjectHits])[,"junID"],tmp.annotatedJunction$junID),c(colnames( tmp.annotatedJunction)[c(1,6:11)],"strand")]
 
     message(paste(Sys.time(),"Adding information of possible multiple split reads annotating the regions"))
     ## adding the information in case regions have multiple id junctions overlappiong
     regionJuncOve.df <- as.data.frame(regionJuncOve)
     regionJuncOve.df <- cbind(regionJuncOve.df,junID=mcols(juncti.GR[regionJuncOve.df$subjectHits])[,"junID"])
-    setDT(regionJuncOve.df)
-    regionJuncOve.df <- regionJuncOve.df[ , .(multiple_junc = paste(unique(junID), collapse=",")), by = queryHits]
-    setDF(regionJuncOve.df)
-
+    regionJuncOve.df <- regionJuncOve.df %>% group_by(queryHits) %>% summarise(multiple_junc = paste(unique(junID), collapse=","))
     tmp.regions[regionJuncOve.df$queryHits,"multi_junc"] <- regionJuncOve.df$multiple_junc
     tmp.regions[regionJuncOve.df$queryHits,"annotationType"] <- 1
 
@@ -77,10 +72,9 @@ annotateERJunction <- function(regions,coverageIntergenic,annotatedJunction)
     regionJuncOve.df <- as.data.frame(regionJuncOve)
     regionJuncOve.df <- cbind(regionJuncOve.df,tmp.annotatedJunction[match(mcols(juncti.GR[regionJuncOve.df$subjectHits])[,"junID"],
                                                                            tmp.annotatedJunction$junID),c("acceptor","donor")])
-    setDT(regionJuncOve.df)
-    regionJuncOve.df <- regionJuncOve.df[ , .(transcipt = paste(unique(unlist(strsplit(as.character(c(acceptor,donor)),","))), collapse=",")), by = queryHits]
-    setDF(regionJuncOve.df)
-    tmp.regions[regionJuncOve.df$queryHits,"transcript"] <- regionJuncOve.df$transcipt
+    regionJuncOve.df <- regionJuncOve.df %>% group_by(queryHits) %>% summarise(transcript = paste(unique(unlist(strsplit(as.character(c(acceptor,donor)),","))), collapse=","))
+
+    tmp.regions[regionJuncOve.df$queryHits,"transcript"] <- regionJuncOve.df$transcript
 
 
     ## make the data frame consistent
@@ -90,7 +84,7 @@ annotateERJunction <- function(regions,coverageIntergenic,annotatedJunction)
     ## step 2. annotate using non-annotated split reads   ###
     #########################################################
 
-    library(tidyverse)
+
     library(stringr)
 
     message(paste(Sys.time(),"Annotating regions with unannotated split reads"))
@@ -120,9 +114,7 @@ annotateERJunction <- function(regions,coverageIntergenic,annotatedJunction)
     regionJuncOve.df <- regionJuncOve.df[!regionJuncOve.df$queryHits%in%which(!is.na(tmp.regions$junID)),]
 
     regionJuncOve.df <- cbind(regionJuncOve.df,countsSamples=tmp.annotatedJunction[match(mcols(juncti.GR[regionJuncOve.df$subjectHits])[,"junID"],tmp.annotatedJunction$junID),"countsSamples"])
-    setDT(regionJuncOve.df)
-    regionJuncOve.df<- regionJuncOve.df [, .SD[which.max(countsSamples)], by=queryHits]
-    setDF(regionJuncOve.df)
+    regionJuncOve.df <- as.data.frame(regionJuncOve.df %>% group_by(queryHits) %>% dplyr::slice(which.max(countsSamples)))
 
     ## link regions using the split reads
     # regionJuncOve.df <- as.data.frame(regionJuncOve)
@@ -232,6 +224,14 @@ annotateERJunction <- function(regions,coverageIntergenic,annotatedJunction)
     # setDF(distNearest)
     #
     # tmp.intergenicRegions[distNearest$queryHits,"transcript"] <- distNearest$transcipt
+
+    message(paste(Sys.time(),"--",
+                  paste0(round((table(is.na(tmp.regions$junID))["FALSE"]/nrow(tmp.regions))*100,digits = 2),"%"),"regions annotated with known genes"))
+
+    message(paste(Sys.time(),"--",
+                  paste0(round((table(tmp.regions$annotationType==2)["TRUE"]/nrow(tmp.regions))*100,digits = 2),"%"),"regions annotated linked together"))
+
+    return(tmp.regions)
 }
 
 
