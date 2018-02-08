@@ -53,6 +53,9 @@ splitReadTable <- splitReadTable[,1:6]
 head(splitReadTable)
 
 system.time(splitReadTable <- annotateSplitReads(GTFPath,splitReadTable,geneList = OMIMGenes$V1))
+## save the annotation
+save(splitReadTable,file="~/tmp/splitReadTable.rda")
+
 
 ### load
 load("/home/dzhang/projects/OMIM/results/intron_intergenic_regions_for_Seb_package_test/ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM.rda")

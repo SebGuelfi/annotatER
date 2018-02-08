@@ -82,7 +82,7 @@ loadSplitReads  <- function(list.samples,minSamples,minCounts=1)
 #' minCounts threshold to be retain
 #' @return minCounts the minimum number of counts that are going to be used as
 #' threshold (1 by default)
-filterSplitReads <- function(splitReadCounts,splitReadInfo, minSamples, minCounts=1)
+filterSplitReads <- function(splitReadCounts,splitReadsInfo, minSamples, minCounts=1)
 {
     ## filter split reads that do not have at least minCounts split reads counts in at least minSamples number of samples
     idx <- which(rowSums(splitReadCounts[,-which(colnames(splitReadCounts)=="junID")]>=minCounts,na.rm = T)>(ncol(splitReadCounts)-1)*0.01*minSamples)
