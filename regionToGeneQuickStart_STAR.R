@@ -23,16 +23,30 @@ junctions <- list()
 junctions[["annotation"]] <- cbind(junID=1:nrow(STARSplitRead),STARSplitRead[,c(1:4,7)])
 junctions[["counts"]] <- cbind(junID=1:nrow(STARSplitRead),STARSplitRead[,8:ncol(STARSplitRead)])
 
-#load("~/projects/R/hipp/data/expression/splitReads/splitReads.filtered.rda")
+load("~/projects/R/hipp/data/expression/splitReads/splitReads.filtered.annotated.rda")
 
 GTFPath <- "/data/references/GTF/Homo_sapiens.GRCh38.87.gtf"
 
 ## annotate the junctions
-junctions[["annotation"]] <- annotateSplitReads(GTFPath,junctions[["annotation"]])
+junctions[["annotation"]] <- annotateSplitReads(GTFPath,tmp.table)
+
+## get the regions
+
+load("/home/sguelfi/projects/R/hipp/data/expression/derfinder/mergedDerfinder.rda")
+load("/home/sguelfi/projects/R/hipp/data/expression/derfinder/RPKM.cqn/RPKM.cqn.rda")
+
+regions <- gr[rownames(RPKM.cqn)]
+rm(gr,ann.reg,counts,RPKM.cqn)
 
 
+load("~/projects/R/hipp/data/expression/splitReads/splitReads.filtered.annotated.rda")
+tmp.table <- tmp.table[,-which(colnames(tmp.table) %in% "intronMotif")]
+colnames(tmp.table)[which(colnames(tmp.table) %in% "junId")] <- "junID"
 
+#tmp.table <- head(tmp.table)
+library(GenomicRanges)
 
+annotated.regions <- annotatERJunction(regions,tmp.table)
 
-
+save(annotated.regions,file="~/projects/R/hipp/data/general/annotated.regions.rda")
 

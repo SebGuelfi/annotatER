@@ -144,8 +144,8 @@ annotateSplitReads <- function(GTFPath,splitReadTable,geneList=NULL)
 
     ## -1 the start and +1 the stop of the junctions to match the splice site positions
     ## get the coordinates
-    splitReadTable$start <- splitReadTable$start -1
-    splitReadTable$stop <- splitReadTable$stop +1
+    # splitReadTable$start <- splitReadTable$start -1
+    # splitReadTable$stop <- splitReadTable$stop +1
 
     ## convert the strand from numeric to "+,-,*" because this is what the ensembl reference uses.
     if(any(names(table(splitReadTable$strand))==1) | any(names(table(splitReadTable$strand))==2) | any(names(table(splitReadTable$strand))==0))

@@ -65,10 +65,3 @@ regions <- rowRanges(ERs_overlapping_OMIM_max_gap_1Mb_intron_intergenic_PUTM)
 
 annotated.regions <- annotatERJunction(regions,splitReadTable)
 
-
-
-
-
-
-
-
